@@ -10,10 +10,29 @@ function required(name) {
   return value;
 }
 
+function parseOrigins(value) {
+  return value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function defaultFrontendOrigins() {
+  if (process.env.NODE_ENV === "production") {
+    return ["https://rasoiroom.in", "https://www.rasoiroom.in"];
+  }
+
+  return ["http://localhost:5173"];
+}
+
 export const env = {
   port: Number(process.env.PORT || 4000),
   nodeEnv: process.env.NODE_ENV || "development",
-  frontendOrigin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+  frontendOrigins: process.env.FRONTEND_ORIGINS
+    ? parseOrigins(process.env.FRONTEND_ORIGINS)
+    : process.env.FRONTEND_ORIGIN
+      ? [process.env.FRONTEND_ORIGIN.trim()]
+      : defaultFrontendOrigins(),
   supabaseUrl: required("SUPABASE_URL"),
   supabaseServiceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
   razorpayKeyId: required("RAZORPAY_KEY_ID"),
