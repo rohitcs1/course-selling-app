@@ -100,18 +100,17 @@ export async function updateCourseById(courseId, payload) {
 
 export async function deleteCourseById(courseId) {
   console.log("deleteCourseById - courseId:", courseId);
+  const { error: ordersError } = await supabase.from("orders").delete().eq("course_id", courseId);
+
+  if (ordersError) {
+    console.error("deleteCourseById orders cleanup error:", ordersError);
+    throw ordersError;
+  }
+
   const { error } = await supabase.from("courses").delete().eq("id", courseId);
 
   if (error) {
     console.error("deleteCourseById error:", error);
-    
-    // Handle foreign key constraint error
-    if (error.code === "23503") {
-      const err = new Error("Cannot delete course with existing orders or enrollments. Please contact support if you need to delete this course.");
-      err.code = "CONSTRAINT_VIOLATION";
-      throw err;
-    }
-    
     throw error;
   }
 
