@@ -1,6 +1,8 @@
 import { verifyRazorpayWebhookSignature } from "../lib/razorpay.js";
 import { createPaymentOrder, createEnrollment, getOrderDetailsByRazorpayOrderId, markOrderFailed, markOrderPaid } from "../services/paymentService.js";
 import { logEmailStatus, sendCourseWelcomeEmail } from "../services/emailService.js";
+import { env } from "../config/env.js";
+import crypto from "crypto";
 
 export async function createOrder(req, res, next) {
   try {
@@ -13,6 +15,33 @@ export async function createOrder(req, res, next) {
     const order = await createPaymentOrder({ courseId, name, email, phone });
     return res.status(201).json(order);
   } catch (error) {
+    return next(error);
+  }
+}
+
+export async function verifyPayment(req, res, next) {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ message: "razorpay_order_id, razorpay_payment_id, and razorpay_signature are required" });
+    }
+
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac("sha256", env.razorpayKeySecret)
+      .update(body)
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      console.log("Payment signature verification failed - signature mismatch");
+      return res.status(400).json({ message: "Payment signature verification failed" });
+    }
+
+    console.log("Payment signature verified successfully for orderId:", razorpay_order_id);
+    return res.status(200).json({ message: "Payment verified", valid: true });
+  } catch (error) {
+    console.error("Payment verification error:", error);
     return next(error);
   }
 }

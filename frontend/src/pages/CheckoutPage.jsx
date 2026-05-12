@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { createOrder } from "../lib/api";
+import { createOrder, verifyPayment } from "../lib/api";
 
 function loadRazorpayScript() {
   return new Promise((resolve, reject) => {
@@ -80,24 +80,44 @@ export default function CheckoutPage({ courses }) {
         name: "CourseNest",
         description: `Enrollment for ${course.title}`,
         order_id: orderData.orderId,
-        handler: function () {
-          const purchasePayload = {
-            courseId: course.id,
-            courseTitle: course.title,
-            courseDescription: course.description,
-            includes: course.includes,
-            level: course.level,
-            duration: course.duration,
-            driveLink: course.driveLink,
-            name: formData.fullName,
-            email: formData.email
-          };
+        handler: async function (response) {
+          try {
+            console.log("Payment response received:", response);
+            
+            // Verify payment signature with backend
+            const verifyResult = await verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            });
+            
+            console.log("Payment verified successfully:", verifyResult);
+            
+            const purchasePayload = {
+              courseId: course.id,
+              courseTitle: course.title,
+              courseDescription: course.description,
+              includes: course.includes,
+              level: course.level,
+              duration: course.duration,
+              driveLink: course.driveLink,
+              name: formData.fullName,
+              email: formData.email,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id
+            };
 
-          localStorage.setItem("course_app_last_purchase", JSON.stringify(purchasePayload));
+            localStorage.setItem("course_app_last_purchase", JSON.stringify(purchasePayload));
+            localStorage.setItem("course_app_user_email", formData.email);
 
-          navigate("/success", {
-            state: purchasePayload
-          });
+            navigate("/success", {
+              state: purchasePayload
+            });
+          } catch (error) {
+            console.error("Payment verification failed:", error);
+            setErrorMessage("Payment verified but could not process: " + (error.message || "Unknown error"));
+            setIsProcessing(false);
+          }
         },
         prefill: {
           name: formData.fullName,

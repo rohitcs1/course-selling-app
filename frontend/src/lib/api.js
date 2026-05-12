@@ -34,6 +34,18 @@ export async function createOrder(payload) {
   return parseResponse(response);
 }
 
+export async function verifyPayment(payload) {
+  const response = await fetch(`${config.apiBaseUrl}/api/payments/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
 export async function getEnrollments(email) {
   const query = new URLSearchParams({ email });
   const response = await fetch(`${config.apiBaseUrl}/api/user/enrollments?${query.toString()}`);
