@@ -10,7 +10,11 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-const allowedOrigins = new Set(env.frontendOrigins);
+const allowedOrigins = new Set([
+  ...env.frontendOrigins,
+  "https://rasoiroom.in",
+  "https://www.rasoiroom.in"
+]);
 
 app.use(
   cors({
