@@ -1,4 +1,5 @@
 import { validateAdminCredentials, generateAdminToken, storeAdminToken, revokeAdminToken, verifyAdminToken } from "../lib/adminAuth.js";
+import { sendCourseWelcomeEmail, logEmailStatus } from "../services/emailService.js";
 
 export async function adminLogin(req, res, next) {
   try {
@@ -52,4 +53,37 @@ export function adminAuthMiddleware(req, res, next) {
 
   console.log("Auth successful - calling next()");
   next();
+}
+
+export async function adminSendTestEmail(req, res, next) {
+  try {
+    const { name, email, courseTitle, driveLink, userId, courseId, orderId, purchaseDate } = req.body;
+
+    if (!name || !email || !courseTitle) {
+      return res.status(400).json({ message: "name, email and courseTitle are required" });
+    }
+
+    const result = await sendCourseWelcomeEmail({
+      userName: name,
+      userEmail: email,
+      courseTitle,
+      driveLink,
+      orderId,
+      purchaseDate
+    });
+
+    if (userId && courseId) {
+      await logEmailStatus({
+        userId,
+        courseId,
+        emailType: "welcome_and_access",
+        status: "sent",
+        providerMessageId: result.messageId
+      });
+    }
+
+    return res.json({ message: "Test email sent", messageId: result.messageId });
+  } catch (error) {
+    return next(error);
+  }
 }

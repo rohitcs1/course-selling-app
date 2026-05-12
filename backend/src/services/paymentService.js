@@ -51,7 +51,7 @@ export async function markOrderPaid({ razorpayOrderId, razorpayPaymentId }) {
       paid_at: new Date().toISOString()
     })
     .eq("razorpay_order_id", razorpayOrderId)
-    .select("id,user_id,course_id,amount,status")
+    .select("id,user_id,course_id,amount,status,paid_at,razorpay_payment_id,razorpay_order_id,created_at")
     .single();
 
   if (error) {
@@ -89,7 +89,7 @@ export async function createEnrollment({ userId, courseId }) {
 export async function getOrderDetailsByRazorpayOrderId(razorpayOrderId) {
   const { data, error } = await supabase
     .from("orders")
-    .select("id,user_id,course_id,razorpay_order_id,status,users(name,email),courses(title,drive_link)")
+    .select("id,user_id,course_id,razorpay_order_id,status,paid_at,created_at,users(name,email),courses(title,drive_link)")
     .eq("razorpay_order_id", razorpayOrderId)
     .single();
 

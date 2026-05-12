@@ -2,8 +2,9 @@ import { transporter } from "../lib/mailer.js";
 import { env } from "../config/env.js";
 import { supabase } from "../lib/supabase.js";
 
-export async function sendCourseWelcomeEmail({ userName, userEmail, courseTitle, driveLink }) {
-  const subject = `Welcome to ${courseTitle} - Your course access is ready`;
+export async function sendCourseWelcomeEmail({ userName, userEmail, courseTitle, driveLink, orderId, purchaseDate }) {
+  const subject = `Course Purchase Successful: ${courseTitle}`;
+  const purchaseDateStr = purchaseDate ? new Date(purchaseDate).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : null;
   const accessSection = driveLink
     ? `
       <p style="margin: 24px 0 10px;">
@@ -31,6 +32,8 @@ export async function sendCourseWelcomeEmail({ userName, userEmail, courseTitle,
       <div style="padding: 28px;">
         <p style="margin: 0 0 14px; font-size: 16px; line-height: 1.8;">Hi ${userName},</p>
         <p style="margin: 0 0 14px; font-size: 16px; line-height: 1.8; color: #334155;">Thank you for purchasing <strong>${courseTitle}</strong>. We have successfully received your payment and activated your course access.</p>
+        ${orderId ? `<p style="margin: 8px 0 0; font-size:14px;color:#5a6b5f;">Order ID: <strong>${orderId}</strong></p>` : ""}
+        ${purchaseDateStr ? `<p style="margin: 4px 0 12px; font-size:14px;color:#5a6b5f;">Purchase Date: <strong>${purchaseDateStr}</strong></p>` : ""}
         <div style="margin: 22px 0; padding: 18px; border-radius: 14px; background: #f7f8f5; border: 1px solid rgba(17,34,24,0.08);">
           <p style="margin: 0 0 8px; font-weight: 700; color: #112218;">What you get next</p>
           <p style="margin: 0; color: #5a6b5f; font-size: 14px; line-height: 1.7;">Instant access to your course resources, Google Drive materials, and all learning content linked to your enrollment.</p>

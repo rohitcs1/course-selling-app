@@ -49,7 +49,9 @@ export async function handleWebhook(req, res, next) {
           userName: orderDetails.users.name,
           userEmail: orderDetails.users.email,
           courseTitle: orderDetails.courses.title,
-          driveLink: orderDetails.courses.drive_link
+          driveLink: orderDetails.courses.drive_link,
+          orderId: orderDetails.id,
+          purchaseDate: paidOrder.paid_at || orderDetails.paid_at || orderDetails.created_at
         });
 
         await logEmailStatus({
