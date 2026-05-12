@@ -23,26 +23,51 @@ export async function verifyPayment(req, res, next) {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
+    console.log("verifyPayment called with:", {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature: razorpay_signature ? razorpay_signature.substring(0, 20) + "..." : "missing",
+      keySecret: env.razorpayKeySecret ? "present" : "MISSING"
+    });
+
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      console.error("Missing required fields:", {
+        razorpay_order_id: !!razorpay_order_id,
+        razorpay_payment_id: !!razorpay_payment_id,
+        razorpay_signature: !!razorpay_signature
+      });
       return res.status(400).json({ message: "razorpay_order_id, razorpay_payment_id, and razorpay_signature are required" });
     }
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac("sha256", env.razorpayKeySecret)
-      .update(body)
-      .digest("hex");
+    console.log("Verifying body:", body);
 
-    if (expectedSignature !== razorpay_signature) {
-      console.log("Payment signature verification failed - signature mismatch");
-      return res.status(400).json({ message: "Payment signature verification failed" });
+    try {
+      const expectedSignature = crypto
+        .createHmac("sha256", env.razorpayKeySecret)
+        .update(body)
+        .digest("hex");
+
+      console.log("Signature comparison:", {
+        expected: expectedSignature.substring(0, 20) + "...",
+        received: razorpay_signature.substring(0, 20) + "...",
+        match: expectedSignature === razorpay_signature
+      });
+
+      if (expectedSignature !== razorpay_signature) {
+        console.error("❌ Payment signature verification FAILED - signature mismatch");
+        return res.status(400).json({ message: "Payment signature verification failed" });
+      }
+
+      console.log("✅ Payment signature verified successfully for orderId:", razorpay_order_id);
+      return res.status(200).json({ message: "Payment verified", valid: true });
+    } catch (hashError) {
+      console.error("Error during HMAC calculation:", hashError);
+      throw hashError;
     }
-
-    console.log("Payment signature verified successfully for orderId:", razorpay_order_id);
-    return res.status(200).json({ message: "Payment verified", valid: true });
   } catch (error) {
-    console.error("Payment verification error:", error);
-    return next(error);
+    console.error("❌ Payment verification error:", error);
+    return res.status(500).json({ message: "Payment verification failed: " + (error?.message || "Unknown error") });
   }
 }
 
