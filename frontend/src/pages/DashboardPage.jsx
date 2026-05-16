@@ -163,8 +163,8 @@ export default function DashboardPage() {
             </div>
 
             <div className="dashboard-access-list">
-              {purchasedCourses.map((course) => (
-                <article key={course.id} className="dashboard-access-item">
+              {purchasedCourses.map((course, idx) => (
+                  <article key={course.id} className="dashboard-access-item animate-slide-up" style={{ ['--delay']: `${idx * 0.06}s` }}>
                   <div>
                     <p className="small-muted">Course Name</p>
                     <h4>{course.title}</h4>

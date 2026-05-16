@@ -8,9 +8,9 @@ function formatInr(price) {
   }).format(price);
 }
 
-export default function CourseCard({ course }) {
+export default function CourseCard({ course, style }) {
   return (
-    <article className="course-card">
+    <article className="course-card animate-scale-in" style={style}>
       <img src={course.thumbnail} alt={course.title} className="course-image" loading="lazy" />
       <div className="course-content">
         <p className="tag">{course.level}</p>

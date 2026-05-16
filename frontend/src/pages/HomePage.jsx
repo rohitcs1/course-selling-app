@@ -34,8 +34,8 @@ export default function HomePage({ courses, isLoadingCourses, courseError }) {
           {isLoadingCourses ? <p className="small-muted">Loading live courses...</p> : null}
           {courseError ? <p className="error-note">{courseError}</p> : null}
           <div className="course-grid">
-            {courses.map((course) => (
-              <CourseCard key={course.id} course={course} />
+            {courses.map((course, idx) => (
+              <CourseCard key={course.id} course={course} style={{ ['--delay']: `${idx * 0.06}s` }} />
             ))}
           </div>
         </div>

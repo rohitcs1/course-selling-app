@@ -115,9 +115,24 @@ export default function CheckoutPage({ courses }) {
             localStorage.setItem("course_app_last_purchase", JSON.stringify(purchasePayload));
             localStorage.setItem("course_app_user_email", formData.email);
 
-            navigate("/success", {
-              state: purchasePayload
-            });
+            // If the course has a Google Drive link configured, open it directly and skip the success page
+            if (course.driveLink) {
+              try {
+                window.open(course.driveLink, "_blank");
+                // Optionally show a quick inline confirmation instead of navigation
+                // keep user on the page or redirect to home after a short delay
+                // navigate('/'); // if you want to redirect to home
+              } catch (err) {
+                console.error("Failed to open drive link:", err);
+                // Fallback to success page if opening fails
+                navigate("/success", { state: purchasePayload });
+              }
+            } else {
+              // Fallback: navigate to the success page when no drive link is available
+              navigate("/success", {
+                state: purchasePayload
+              });
+            }
           } catch (error) {
             console.error("❌ Payment verification failed:", error);
             console.error("Error details:", {
