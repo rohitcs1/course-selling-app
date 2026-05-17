@@ -3,7 +3,6 @@ import {
   createPaymentOrder,
   createEnrollment,
   getOrderDetailsByRazorpayOrderId,
-  hasSentWelcomeEmail,
   markOrderFailed,
   markOrderPaid
 } from "../services/paymentService.js";
@@ -11,11 +10,46 @@ import { logEmailStatus, sendCourseWelcomeEmail } from "../services/emailService
 import { env } from "../config/env.js";
 import crypto from "crypto";
 
+async function sendWelcomeEmailAsync(orderDetails) {
+  try {
+    const mailResult = await sendCourseWelcomeEmail({
+      userName: orderDetails.users.name,
+      userEmail: orderDetails.users.email,
+      courseTitle: orderDetails.courses.title,
+      driveLink: orderDetails.courses.drive_link,
+      orderId: orderDetails.id,
+      purchaseDate: orderDetails.paid_at || orderDetails.created_at
+    });
+
+    await logEmailStatus({
+      userId: orderDetails.user_id,
+      courseId: orderDetails.course_id,
+      emailType: "welcome_and_access",
+      status: "sent",
+      providerMessageId: mailResult.messageId
+    });
+  } catch (mailError) {
+    try {
+      await logEmailStatus({
+        userId: orderDetails.user_id,
+        courseId: orderDetails.course_id,
+        emailType: "welcome_and_access",
+        status: "failed",
+        error: mailError.message
+      });
+    } catch (logError) {
+      console.error("Failed to write email log:", logError);
+    }
+  }
+}
+
 async function finalizePaidOrder({ razorpayOrderId, razorpayPaymentId }) {
   const orderDetails = await getOrderDetailsByRazorpayOrderId(razorpayOrderId);
+  let shouldSendWelcomeEmail = false;
 
   if (orderDetails.status !== "paid") {
-    await markOrderPaid({ razorpayOrderId, razorpayPaymentId });
+    const paidOrder = await markOrderPaid({ razorpayOrderId, razorpayPaymentId });
+    shouldSendWelcomeEmail = Boolean(paidOrder);
   }
 
   const enrollment = await createEnrollment({
@@ -23,43 +57,16 @@ async function finalizePaidOrder({ razorpayOrderId, razorpayPaymentId }) {
     courseId: orderDetails.course_id
   });
 
-  const refreshedOrderDetails = await getOrderDetailsByRazorpayOrderId(razorpayOrderId);
-  const emailAlreadySent = await hasSentWelcomeEmail({
-    userId: refreshedOrderDetails.user_id,
-    courseId: refreshedOrderDetails.course_id
-  });
-
-  if (!emailAlreadySent) {
-    try {
-      const mailResult = await sendCourseWelcomeEmail({
-        userName: refreshedOrderDetails.users.name,
-        userEmail: refreshedOrderDetails.users.email,
-        courseTitle: refreshedOrderDetails.courses.title,
-        driveLink: refreshedOrderDetails.courses.drive_link,
-        orderId: refreshedOrderDetails.id,
-        purchaseDate: refreshedOrderDetails.paid_at || refreshedOrderDetails.created_at
+  if (shouldSendWelcomeEmail) {
+    setImmediate(() => {
+      sendWelcomeEmailAsync(orderDetails).catch((error) => {
+        console.error("Background welcome email workflow failed:", error);
       });
-
-      await logEmailStatus({
-        userId: refreshedOrderDetails.user_id,
-        courseId: refreshedOrderDetails.course_id,
-        emailType: "welcome_and_access",
-        status: "sent",
-        providerMessageId: mailResult.messageId
-      });
-    } catch (mailError) {
-      await logEmailStatus({
-        userId: refreshedOrderDetails.user_id,
-        courseId: refreshedOrderDetails.course_id,
-        emailType: "welcome_and_access",
-        status: "failed",
-        error: mailError.message
-      });
-    }
+    });
   }
 
   return {
-    orderDetails: refreshedOrderDetails,
+    orderDetails,
     enrollment
   };
 }

@@ -51,8 +51,9 @@ export async function markOrderPaid({ razorpayOrderId, razorpayPaymentId }) {
       paid_at: new Date().toISOString()
     })
     .eq("razorpay_order_id", razorpayOrderId)
+    .neq("status", "paid")
     .select("id,user_id,course_id,amount,status,paid_at,razorpay_payment_id,razorpay_order_id,created_at")
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw error;
