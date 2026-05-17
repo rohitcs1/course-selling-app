@@ -69,7 +69,7 @@ async function finalizePaidOrder({ razorpayOrderId, razorpayPaymentId }) {
     orderDetails,
     enrollment
   };
-}
+} 
 
 export async function createOrder(req, res, next) {
   try {
