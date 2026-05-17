@@ -22,24 +22,11 @@ export async function verifyPayment(req, res, next) {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    console.log("verifyPayment called with:", {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature: razorpay_signature ? razorpay_signature.substring(0, 20) + "..." : "missing",
-      keySecret: env.razorpayKeySecret ? "present" : "MISSING"
-    });
-
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      console.error("Missing required fields:", {
-        razorpay_order_id: !!razorpay_order_id,
-        razorpay_payment_id: !!razorpay_payment_id,
-        razorpay_signature: !!razorpay_signature
-      });
       return res.status(400).json({ message: "razorpay_order_id, razorpay_payment_id, and razorpay_signature are required" });
     }
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
-    console.log("Verifying body:", body);
 
     try {
       const expectedSignature = crypto
@@ -47,14 +34,7 @@ export async function verifyPayment(req, res, next) {
         .update(body)
         .digest("hex");
 
-      console.log("Signature comparison:", {
-        expected: expectedSignature.substring(0, 20) + "...",
-        received: razorpay_signature.substring(0, 20) + "...",
-        match: expectedSignature === razorpay_signature
-      });
-
       if (expectedSignature !== razorpay_signature) {
-        console.error("❌ Payment signature verification FAILED - signature mismatch");
         return res.status(400).json({ message: "Payment signature verification failed" });
       }
 
@@ -63,7 +43,6 @@ export async function verifyPayment(req, res, next) {
         razorpayPaymentId: razorpay_payment_id
       });
 
-      console.log("✅ Payment verified successfully for orderId:", razorpay_order_id);
       return res.status(200).json({
         message: result.alreadyProcessed ? "Payment already processed" : "Payment verified",
         valid: true,
@@ -89,22 +68,14 @@ export async function handleWebhook(req, res, next) {
     }
 
     const event = JSON.parse(req.body.toString("utf8"));
-    console.log("Webhook event received:", event.event);
 
     if (event.event === "payment.captured") {
       const razorpayOrderId = event.payload.payment.entity.order_id;
       const razorpayPaymentId = event.payload.payment.entity.id;
-      console.log("Payment captured - orderId:", razorpayOrderId, "paymentId:", razorpayPaymentId);
 
       const result = await fulfillSuccessfulPayment({
         razorpayOrderId,
         razorpayPaymentId
-      });
-
-      console.log("Order fulfilled:", {
-        alreadyProcessed: result.alreadyProcessed,
-        enrollmentId: result.enrollment?.id || null,
-        orderId: result.order?.id || null
       });
 
       return res.status(200).json({
@@ -116,7 +87,6 @@ export async function handleWebhook(req, res, next) {
 
     if (event.event === "payment.failed") {
       const razorpayOrderId = event.payload.payment.entity.order_id;
-      console.log("Payment failed - orderId:", razorpayOrderId);
       await markOrderFailed({ razorpayOrderId });
       return res.status(200).json({ message: "Payment failed event processed" });
     }

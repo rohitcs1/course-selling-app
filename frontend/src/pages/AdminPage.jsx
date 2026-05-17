@@ -42,7 +42,6 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
   const latestCourses = (adminCourses.length > 0 ? adminCourses : courses).slice(0, 5);
 
   useEffect(() => {
-    console.log("AdminPage mounted, adminToken:", adminToken);
     if (!adminToken) {
       setErrorMessage("Admin token not found. Please log in again.");
       return;
@@ -84,8 +83,6 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
 
   const onSubmit = async (event) => {
     event.preventDefault();
-    console.log("Form submitted - editingCourseId:", editingCourseId, "formData:", formData);
-    
     setIsSaving(true);
     setMessage("");
     setErrorMessage("");
@@ -110,7 +107,6 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
 
     try {
       if (editingCourseId) {
-        console.log("Updating course:", editingCourseId);
         const updatePayload = {
           title: nextCourse.title,
           heading: nextCourse.heading,
@@ -122,12 +118,9 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
           level: nextCourse.level,
           isPublished: true
         };
-        console.log("Update payload:", updatePayload);
         await updateCourseAdmin(editingCourseId, updatePayload, adminToken);
-        console.log("Update succeeded");
         setMessage("Course updated successfully.");
       } else {
-        console.log("Creating new course");
         await onAddCourse(nextCourse, adminToken);
         setMessage("Course added successfully.");
       }
@@ -143,7 +136,6 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
   };
 
   const onEditClick = (course) => {
-    console.log("Edit clicked - course data:", course);
     setEditingCourseId(course.id);
     const newFormData = {
       title: course.title || "",
@@ -156,7 +148,6 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
       level: course.level || "Beginner",
       includes: ""
     };
-    console.log("Setting form data:", newFormData);
     setFormData(newFormData);
     setMessage("");
     setErrorMessage("");
@@ -164,14 +155,12 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
   };
 
   const onDeleteClick = async (courseId) => {
-    console.log("Delete clicked for course:", courseId, "Token:", adminToken);
     const shouldDelete = window.confirm("Is course ko delete karna hai?");
     if (!shouldDelete) {
       return;
     }
 
     try {
-      console.log("Calling deleteCourseAdmin with:", { courseId, token: adminToken });
       await deleteCourseAdmin(courseId, adminToken);
       setMessage("Course deleted successfully.");
       setAdminCourses((prev) => prev.filter((course) => course.id !== courseId));

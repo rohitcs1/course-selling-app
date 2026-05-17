@@ -40,18 +40,12 @@ export async function adminLogout(req, res, next) {
 
 export function adminAuthMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
-  console.log("adminAuthMiddleware - Authorization header:", authHeader ? "present" : "missing");
-  
   const token = authHeader?.replace("Bearer ", "");
-  console.log("Extracted token:", token ? token.substring(0, 20) + "..." : "none");
-  console.log("Token verification result:", token ? verifyAdminToken(token) : false);
 
   if (!token || !verifyAdminToken(token)) {
-    console.log("Auth failed - returning 401");
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  console.log("Auth successful - calling next()");
   next();
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getEnrollments } from "../lib/api";
 
 function formatDate(isoString) {
@@ -85,25 +85,6 @@ export default function DashboardPage() {
       heading: item.courses?.heading || "Course access ready"
     }))
     .filter((item) => item.driveLink);
-
-  // Debug log
-  useEffect(() => {
-    if (enrollments.length > 0) {
-      console.log("📊 Dashboard Debug Info:");
-      console.log("Total Enrollments:", enrollments.length);
-      console.log("Raw Enrollments Data:", enrollments);
-      console.log("Purchased Courses (filtered):", purchasedCourses);
-      enrollments.forEach((enr, idx) => {
-        console.log(`Enrollment ${idx}:`, {
-          id: enr.id,
-          courseId: enr.course_id,
-          coursesObject: enr.courses,
-          driveLink: enr.courses?.drive_link,
-          hasEmptyDriveLink: enr.courses?.drive_link === ""
-        });
-      });
-    }
-  }, [enrollments, purchasedCourses]);
 
   return (
     <section className="section dashboard-section">

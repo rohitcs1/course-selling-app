@@ -83,21 +83,11 @@ export default function CheckoutPage({ courses }) {
         order_id: orderData.orderId,
         handler: async function (response) {
           try {
-            console.log("🎉 Payment response received from Razorpay:", {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature ? response.razorpay_signature.substring(0, 20) + "..." : "missing"
-            });
-            
-            // Verify payment signature with backend
-            console.log("🔍 Verifying payment with backend at:", `${window.location.origin}`);
-            const verifyResult = await verifyPayment({
+            await verifyPayment({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature
             });
-            
-            console.log("✅ Payment verified successfully:", verifyResult);
             
             const purchasePayload = {
               courseId: course.id,
@@ -116,14 +106,8 @@ export default function CheckoutPage({ courses }) {
             localStorage.setItem("course_app_last_purchase", JSON.stringify(purchasePayload));
             localStorage.setItem("course_app_user_email", formData.email);
 
-            window.location.assign(COURSE_ACCESS_URL);
+            window.location.replace(COURSE_ACCESS_URL);
           } catch (error) {
-            console.error("❌ Payment verification failed:", error);
-            console.error("Error details:", {
-              message: error.message,
-              status: error.status,
-              response: error.response
-            });
             setErrorMessage("Payment verification failed: " + (error.message || "Unknown error. Check console for details."));
             setIsProcessing(false);
           }
