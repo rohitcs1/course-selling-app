@@ -1,7 +1,28 @@
 import { Link } from "react-router-dom";
 import CourseCard from "../components/CourseCard";
 
-export default function HomePage({ courses, isLoadingCourses, courseError }) {
+function getYouTubeEmbedUrl(youtubeUrl) {
+  if (!youtubeUrl) {
+    return "";
+  }
+
+  try {
+    const parsedUrl = new URL(youtubeUrl);
+    if (parsedUrl.hostname.includes("youtu.be")) {
+      const videoId = parsedUrl.pathname.replace("/", "");
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+    }
+
+    const videoId = parsedUrl.searchParams.get("v");
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+  } catch {
+    return "";
+  }
+}
+
+export default function HomePage({ courses, isLoadingCourses, courseError, homepageVideo }) {
+  const embedUrl = getYouTubeEmbedUrl(homepageVideo?.youtube_url);
+
   return (
     <div>
       <section className="hero">
@@ -24,6 +45,35 @@ export default function HomePage({ courses, isLoadingCourses, courseError }) {
           {/* hero panel removed to keep clean layout */}
         </div>
       </section>
+
+      {homepageVideo?.youtube_url ? (
+        <section className="section">
+          <div className="container">
+            <div className="section-head">
+              <p className="eyebrow">Featured Video</p>
+              <h2>{homepageVideo.title || "Watch this video"}</h2>
+              {homepageVideo.description ? <p>{homepageVideo.description}</p> : null}
+            </div>
+
+            <article className="video-card glass-card">
+              <div className="video-frame">
+                {embedUrl ? (
+                  <iframe
+                    src={embedUrl}
+                    title={homepageVideo.title || "Homepage featured video"}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="video-placeholder">
+                    <p>Invalid YouTube link configured in admin panel.</p>
+                  </div>
+                )}
+              </div>
+            </article>
+          </div>
+        </section>
+      ) : null}
 
       <section id="courses" className="section">
         <div className="container">

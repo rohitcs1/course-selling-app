@@ -1,5 +1,6 @@
 import { validateAdminCredentials, generateAdminToken, storeAdminToken, revokeAdminToken, verifyAdminToken } from "../lib/adminAuth.js";
 import { sendCourseWelcomeEmail, logEmailStatus } from "../services/emailService.js";
+import { getHomepageVideoSettings, upsertHomepageVideoSettings } from "../services/homepageService.js";
 
 export async function adminLogin(req, res, next) {
   try {
@@ -77,6 +78,30 @@ export async function adminSendTestEmail(req, res, next) {
     }
 
     return res.json({ message: "Test email sent", messageId: result.messageId });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function adminGetHomepageVideo(req, res, next) {
+  try {
+    const settings = await getHomepageVideoSettings();
+    return res.json({ settings });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function adminUpdateHomepageVideo(req, res, next) {
+  try {
+    const { title, youtubeUrl, description } = req.body;
+
+    if (!youtubeUrl) {
+      return res.status(400).json({ message: "youtubeUrl is required" });
+    }
+
+    const settings = await upsertHomepageVideoSettings({ title, youtubeUrl, description });
+    return res.json({ message: "Homepage video updated", settings });
   } catch (error) {
     return next(error);
   }

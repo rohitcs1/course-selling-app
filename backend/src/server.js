@@ -5,6 +5,7 @@ import courseRouter from "./routes/courseRoutes.js";
 import paymentRouter from "./routes/paymentRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
+import homeRouter from "./routes/homeRoutes.js";
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
 app.use("/api/courses", courseRouter);
+app.use("/api/home", homeRouter);
 app.use("/api/payments", paymentRouter);
 app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);

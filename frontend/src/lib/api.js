@@ -55,6 +55,11 @@ export async function getEnrollments(email) {
   return parseResponse(response);
 }
 
+export async function getHomepageVideo() {
+  const response = await fetch(`${config.apiBaseUrl}/api/home/video`);
+  return parseResponse(response);
+}
+
 export async function createCourseAdmin(payload, token) {
   const response = await fetch(`${config.apiBaseUrl}/api/courses/admin`, {
     method: "POST",
@@ -103,5 +108,28 @@ export async function deleteCourseAdmin(courseId, token) {
   });
 
   console.log("deleteCourseAdmin response status:", response.status);
+  return parseResponse(response);
+}
+
+export async function getHomepageVideoAdmin(token) {
+  const response = await fetch(`${config.apiBaseUrl}/api/admin/homepage-video`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  return parseResponse(response);
+}
+
+export async function updateHomepageVideoAdmin(payload, token) {
+  const response = await fetch(`${config.apiBaseUrl}/api/admin/homepage-video`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+
   return parseResponse(response);
 }

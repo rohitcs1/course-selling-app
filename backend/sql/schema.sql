@@ -71,6 +71,18 @@ create index if not exists idx_enrollments_course_id on public.enrollments(cours
 create index if not exists idx_email_logs_user_id on public.email_logs(user_id);
 create index if not exists idx_admin_users_username on public.admin_users(username);
 
+create table if not exists public.homepage_video_settings (
+  id int primary key default 1,
+  title text not null default 'Featured Video',
+  youtube_url text not null default '',
+  description text,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.homepage_video_settings (id, title, youtube_url, description)
+values (1, 'Featured Video', '', 'Add a YouTube video link to show on the home page')
+on conflict (id) do nothing;
+
 insert into public.admin_users (username, password_hash, is_active)
 values (
   'rohitcs175@gmail.com',

@@ -13,7 +13,7 @@ import ContactPage from "./pages/ContactPage";
 import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
 import { seedCourses } from "./data/seedCourses";
-import { createCourseAdmin, getCourses } from "./lib/api";
+import { createCourseAdmin, getCourses, getHomepageVideo } from "./lib/api";
 
 function normalizeCourse(course) {
   return {
@@ -36,6 +36,7 @@ export default function App() {
   const [courses, setCourses] = useState([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [courseError, setCourseError] = useState("");
+  const [homepageVideo, setHomepageVideo] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -63,6 +64,31 @@ export default function App() {
     }
 
     fetchCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchHomepageVideo() {
+      try {
+        const data = await getHomepageVideo();
+        if (!isMounted) {
+          return;
+        }
+
+        setHomepageVideo(data.settings || null);
+      } catch (error) {
+        if (isMounted) {
+          setHomepageVideo(null);
+        }
+      }
+    }
+
+    fetchHomepageVideo();
 
     return () => {
       isMounted = false;
@@ -109,7 +135,14 @@ export default function App() {
           <Routes>
             <Route
               path="/"
-              element={<HomePage courses={courses} isLoadingCourses={isLoadingCourses} courseError={courseError} />}
+              element={
+                <HomePage
+                  courses={courses}
+                  isLoadingCourses={isLoadingCourses}
+                  courseError={courseError}
+                  homepageVideo={homepageVideo}
+                />
+              }
             />
             <Route path="/course/:courseId" element={<CoursePage courses={courses} />} />
             <Route path="/checkout/:courseId" element={<CheckoutPage courses={courses} />} />

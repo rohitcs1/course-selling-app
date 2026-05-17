@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "../context/AuthContext";
-import { deleteCourseAdmin, getAllCoursesAdmin, updateCourseAdmin } from "../lib/api";
+import {
+  deleteCourseAdmin,
+  getAllCoursesAdmin,
+  getHomepageVideoAdmin,
+  updateCourseAdmin,
+  updateHomepageVideoAdmin
+} from "../lib/api";
 
 function makeIdFromTitle(title) {
   return title
@@ -38,7 +44,13 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingHomepageVideo, setIsSavingHomepageVideo] = useState(false);
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  const [homepageVideoForm, setHomepageVideoForm] = useState({
+    title: "Featured Video",
+    youtubeUrl: "",
+    description: ""
+  });
   const latestCourses = (adminCourses.length > 0 ? adminCourses : courses).slice(0, 5);
 
   useEffect(() => {
@@ -48,6 +60,7 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
     }
 
     loadAdminCourses();
+    loadHomepageVideo();
   }, [adminToken]);
 
   const loadAdminCourses = async () => {
@@ -59,6 +72,21 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
       setErrorMessage(error.message || "Courses load nahi hue");
     } finally {
       setIsLoadingCourses(false);
+    }
+  };
+
+  const loadHomepageVideo = async () => {
+    try {
+      const data = await getHomepageVideoAdmin(adminToken);
+      if (data.settings) {
+        setHomepageVideoForm({
+          title: data.settings.title || "Featured Video",
+          youtubeUrl: data.settings.youtube_url || "",
+          description: data.settings.description || ""
+        });
+      }
+    } catch (error) {
+      console.error("Homepage video load error:", error);
     }
   };
 
@@ -79,6 +107,10 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
 
   const onChange = (event) => {
     setFormData((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+  };
+
+  const onHomepageVideoChange = (event) => {
+    setHomepageVideoForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
   };
 
   const onSubmit = async (event) => {
@@ -132,6 +164,23 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
       setErrorMessage(error.message || "Course save nahi ho paya");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const onHomepageVideoSubmit = async (event) => {
+    event.preventDefault();
+    setIsSavingHomepageVideo(true);
+    setMessage("");
+    setErrorMessage("");
+
+    try {
+      await updateHomepageVideoAdmin(homepageVideoForm, adminToken);
+      setMessage("Homepage video updated successfully.");
+    } catch (error) {
+      console.error("Homepage video save error:", error);
+      setErrorMessage(error.message || "Homepage video save nahi ho paya");
+    } finally {
+      setIsSavingHomepageVideo(false);
     }
   };
 
@@ -198,6 +247,47 @@ export default function AdminPage({ courses, stats, onAddCourse }) {
             ))}
           </ul>
         </aside>
+
+        <div className="glass-card">
+          <h2>Add YouTube Link in Home Page</h2>
+          <p>Yahan YouTube video link save karo, jo home page par featured card me chalega.</p>
+
+          <form onSubmit={onHomepageVideoSubmit} className="checkout-form">
+            <label>
+              Card Title
+              <input
+                name="title"
+                value={homepageVideoForm.title}
+                onChange={onHomepageVideoChange}
+                placeholder="Featured Video"
+              />
+            </label>
+            <label>
+              YouTube Link
+              <input
+                type="url"
+                name="youtubeUrl"
+                value={homepageVideoForm.youtubeUrl}
+                onChange={onHomepageVideoChange}
+                required
+                placeholder="https://www.youtube.com/watch?v=..."
+              />
+            </label>
+            <label className="span-2">
+              Description
+              <textarea
+                name="description"
+                value={homepageVideoForm.description}
+                onChange={onHomepageVideoChange}
+                rows="3"
+                placeholder="Short intro about the video"
+              />
+            </label>
+            <button type="submit" className="btn btn-primary full" disabled={isSavingHomepageVideo}>
+              {isSavingHomepageVideo ? "Saving..." : "Save Home Page Video"}
+            </button>
+          </form>
+        </div>
 
         <div className="glass-card">
           <h2>{editingCourseId ? "Edit Course" : "Add New Course"}</h2>
