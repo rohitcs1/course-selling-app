@@ -81,7 +81,7 @@ export default function DashboardPage() {
     .map((item) => ({
       id: item.id,
       title: item.courses?.title || "Your Course",
-      driveLink: item.courses?.drive_link || "",
+      driveLink: item.drive_link || item.courses?.drive_link || "",
       heading: item.courses?.heading || "Course access ready"
     }))
     .filter((item) => item.driveLink);
@@ -199,7 +199,7 @@ export default function DashboardPage() {
         ) : (
           <div className="enrollment-grid">
             {enrollments.map((item) => {
-              const driveLink = item.courses?.drive_link;
+                const driveLink = item.drive_link || item.courses?.drive_link;
               const title = item.courses?.title || "Your Course";
               const heading = item.courses?.heading || "Course access ready";
               const studentName = item.users?.name || "Student";

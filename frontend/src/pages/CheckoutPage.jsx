@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { createOrder, verifyPayment } from "../lib/api";
+
+const COURSE_ACCESS_URL = "https://drive.google.com/drive/folders/16Z3ZHHDtZFjMCQL3Ugn_QwgxdfqMwzZX";
 
 function loadRazorpayScript() {
   return new Promise((resolve, reject) => {
@@ -27,7 +29,6 @@ function formatInr(price) {
 
 export default function CheckoutPage({ courses }) {
   const { courseId } = useParams();
-  const navigate = useNavigate();
   const course = useMemo(() => courses.find((item) => item.id === courseId), [courses, courseId]);
 
   const [formData, setFormData] = useState({
@@ -115,24 +116,7 @@ export default function CheckoutPage({ courses }) {
             localStorage.setItem("course_app_last_purchase", JSON.stringify(purchasePayload));
             localStorage.setItem("course_app_user_email", formData.email);
 
-            // If the course has a Google Drive link configured, open it directly and skip the success page
-            if (course.driveLink) {
-              try {
-                window.open(course.driveLink, "_blank");
-                // Optionally show a quick inline confirmation instead of navigation
-                // keep user on the page or redirect to home after a short delay
-                // navigate('/'); // if you want to redirect to home
-              } catch (err) {
-                console.error("Failed to open drive link:", err);
-                // Fallback to success page if opening fails
-                navigate("/success", { state: purchasePayload });
-              }
-            } else {
-              // Fallback: navigate to the success page when no drive link is available
-              navigate("/success", {
-                state: purchasePayload
-              });
-            }
+            window.location.assign(COURSE_ACCESS_URL);
           } catch (error) {
             console.error("❌ Payment verification failed:", error);
             console.error("Error details:", {

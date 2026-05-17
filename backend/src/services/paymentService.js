@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase.js";
 import { env } from "../config/env.js";
 import { getCourseById } from "./courseService.js";
 import { upsertUser } from "./userService.js";
+import { logEmailStatus, sendCourseWelcomeEmail } from "./emailService.js";
 
 export async function createPaymentOrder({ courseId, name, email, phone }) {
   const course = await getCourseById(courseId);
@@ -72,11 +73,11 @@ export async function markOrderFailed({ razorpayOrderId }) {
   }
 }
 
-export async function createEnrollment({ userId, courseId }) {
+export async function createEnrollment({ userId, courseId, driveLink = null }) {
   const { data, error } = await supabase
     .from("enrollments")
-    .upsert({ user_id: userId, course_id: courseId }, { onConflict: "user_id,course_id" })
-    .select("id,user_id,course_id,created_at")
+    .upsert({ user_id: userId, course_id: courseId, drive_link: driveLink }, { onConflict: "user_id,course_id" })
+    .select("id,user_id,course_id,drive_link,created_at")
     .single();
 
   if (error) {
@@ -84,6 +85,61 @@ export async function createEnrollment({ userId, courseId }) {
   }
 
   return data;
+}
+
+export async function fulfillSuccessfulPayment({ razorpayOrderId, razorpayPaymentId }) {
+  const orderDetails = await getOrderDetailsByRazorpayOrderId(razorpayOrderId);
+
+  if (orderDetails.status === "paid") {
+    return { order: orderDetails, enrollment: null, alreadyProcessed: true };
+  }
+
+  const paidOrder = await markOrderPaid({ razorpayOrderId, razorpayPaymentId });
+  const enrollment = await createEnrollment({
+    userId: paidOrder.user_id,
+    courseId: paidOrder.course_id,
+    driveLink: orderDetails.courses?.drive_link || null
+  });
+
+  try {
+    const mailResult = await sendCourseWelcomeEmail({
+      userName: orderDetails.users.name,
+      userEmail: orderDetails.users.email,
+      courseTitle: orderDetails.courses.title,
+      driveLink: orderDetails.courses.drive_link,
+      orderId: paidOrder.id,
+      purchaseDate: paidOrder.paid_at || orderDetails.created_at
+    });
+
+    await logEmailStatus({
+      userId: paidOrder.user_id,
+      courseId: paidOrder.course_id,
+      emailType: "welcome_and_access",
+      status: "sent",
+      providerMessageId: mailResult.messageId
+    });
+  } catch (mailError) {
+    await logEmailStatus({
+      userId: paidOrder.user_id,
+      courseId: paidOrder.course_id,
+      emailType: "welcome_and_access",
+      status: "failed",
+      error: mailError.message
+    });
+  }
+
+  if (enrollment?.id && orderDetails.courses?.drive_link) {
+    const { error: updateError } = await supabase
+      .from("enrollments")
+      .update({ drive_link: orderDetails.courses.drive_link })
+      .eq("id", enrollment.id);
+
+    if (updateError) {
+      throw updateError;
+    }
+  }
+
+  return { order: paidOrder, enrollment, alreadyProcessed: false };
 }
 
 export async function getOrderDetailsByRazorpayOrderId(razorpayOrderId) {

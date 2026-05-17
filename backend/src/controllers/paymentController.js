@@ -1,6 +1,5 @@
 import { verifyRazorpayWebhookSignature } from "../lib/razorpay.js";
-import { createPaymentOrder, createEnrollment, getOrderDetailsByRazorpayOrderId, markOrderFailed, markOrderPaid } from "../services/paymentService.js";
-import { logEmailStatus, sendCourseWelcomeEmail } from "../services/emailService.js";
+import { createPaymentOrder, fulfillSuccessfulPayment, markOrderFailed } from "../services/paymentService.js";
 import { env } from "../config/env.js";
 import crypto from "crypto";
 
@@ -59,8 +58,17 @@ export async function verifyPayment(req, res, next) {
         return res.status(400).json({ message: "Payment signature verification failed" });
       }
 
-      console.log("✅ Payment signature verified successfully for orderId:", razorpay_order_id);
-      return res.status(200).json({ message: "Payment verified", valid: true });
+      const result = await fulfillSuccessfulPayment({
+        razorpayOrderId: razorpay_order_id,
+        razorpayPaymentId: razorpay_payment_id
+      });
+
+      console.log("✅ Payment verified successfully for orderId:", razorpay_order_id);
+      return res.status(200).json({
+        message: result.alreadyProcessed ? "Payment already processed" : "Payment verified",
+        valid: true,
+        alreadyProcessed: Boolean(result.alreadyProcessed)
+      });
     } catch (hashError) {
       console.error("Error during HMAC calculation:", hashError);
       throw hashError;
@@ -88,53 +96,21 @@ export async function handleWebhook(req, res, next) {
       const razorpayPaymentId = event.payload.payment.entity.id;
       console.log("Payment captured - orderId:", razorpayOrderId, "paymentId:", razorpayPaymentId);
 
-      const paidOrder = await markOrderPaid({
+      const result = await fulfillSuccessfulPayment({
         razorpayOrderId,
         razorpayPaymentId
       });
-      console.log("Order marked as paid:", paidOrder.id, "userId:", paidOrder.user_id, "courseId:", paidOrder.course_id);
 
-      const enrollment = await createEnrollment({
-        userId: paidOrder.user_id,
-        courseId: paidOrder.course_id
+      console.log("Order fulfilled:", {
+        alreadyProcessed: result.alreadyProcessed,
+        enrollmentId: result.enrollment?.id || null,
+        orderId: result.order?.id || null
       });
-      console.log("Enrollment created:", enrollment.id, "for user:", paidOrder.user_id, "course:", paidOrder.course_id);
-
-      const orderDetails = await getOrderDetailsByRazorpayOrderId(razorpayOrderId);
-      console.log("Order details fetched - user email:", orderDetails.users.email, "course title:", orderDetails.courses.title);
-
-      try {
-        const mailResult = await sendCourseWelcomeEmail({
-          userName: orderDetails.users.name,
-          userEmail: orderDetails.users.email,
-          courseTitle: orderDetails.courses.title,
-          driveLink: orderDetails.courses.drive_link,
-          orderId: orderDetails.id,
-          purchaseDate: paidOrder.paid_at || orderDetails.paid_at || orderDetails.created_at
-        });
-        console.log("Welcome email sent successfully - messageId:", mailResult.messageId);
-
-        await logEmailStatus({
-          userId: orderDetails.user_id,
-          courseId: orderDetails.course_id,
-          emailType: "welcome_and_access",
-          status: "sent",
-          providerMessageId: mailResult.messageId
-        });
-      } catch (mailError) {
-        console.error("Error sending welcome email:", mailError.message);
-        await logEmailStatus({
-          userId: orderDetails.user_id,
-          courseId: orderDetails.course_id,
-          emailType: "welcome_and_access",
-          status: "failed",
-          error: mailError.message
-        });
-      }
 
       return res.status(200).json({
         message: "Payment captured, enrollment granted",
-        enrollmentId: enrollment.id
+        enrollmentId: result.enrollment?.id || null,
+        alreadyProcessed: Boolean(result.alreadyProcessed)
       });
     }
 

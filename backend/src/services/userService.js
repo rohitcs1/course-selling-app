@@ -55,7 +55,7 @@ export async function getEnrollmentsByEmail(email) {
   const { data, error } = await supabase
     .from("enrollments")
     .select(
-      "id,created_at,user_id,course_id,courses(id,title,heading,price,drive_link,thumbnail_url,duration,level,description),users(id,email,name)"
+      "id,created_at,user_id,course_id,drive_link,courses(id,title,heading,price,drive_link,thumbnail_url,duration,level,description),users(id,email,name)"
     )
     .eq("user_id", userData.id)
     .order("created_at", { ascending: false });

@@ -7,7 +7,6 @@ import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import HomePage from "./pages/HomePage";
 import CoursePage from "./pages/CoursePage";
 import CheckoutPage from "./pages/CheckoutPage";
-import SuccessPage from "./pages/SuccessPage";
 import DashboardPage from "./pages/DashboardPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import ContactPage from "./pages/ContactPage";
@@ -114,7 +113,7 @@ export default function App() {
             />
             <Route path="/course/:courseId" element={<CoursePage courses={courses} />} />
             <Route path="/checkout/:courseId" element={<CheckoutPage courses={courses} />} />
-            <Route path="/success" element={<SuccessPage />} />
+            <Route path="/success" element={<Navigate to="/" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/about" element={<AboutPage />} />

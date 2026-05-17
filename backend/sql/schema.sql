@@ -48,9 +48,13 @@ create table if not exists public.enrollments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
   course_id text not null references public.courses(id) on delete cascade,
+  drive_link text,
   created_at timestamptz not null default now(),
   unique (user_id, course_id)
 );
+
+alter table if exists public.enrollments
+  add column if not exists drive_link text;
 
 create table if not exists public.email_logs (
   id uuid primary key default gen_random_uuid(),
